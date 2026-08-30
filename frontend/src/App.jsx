@@ -10,7 +10,7 @@ import {
   Download
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
+const API_BASE = import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' && window.location.port === '5173' ? 'http://localhost:8000/api' : '/api');
 
 export default function App() {
   // Mode Switcher: 'candidate' | 'recruiter' | 'eval'

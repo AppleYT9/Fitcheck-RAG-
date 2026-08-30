@@ -458,6 +458,16 @@ def reset_session(session_id: Optional[str] = None):
     return {"status": "ok", "message": "Session reset successfully"}
 
 
+# ------------------------------------------------------------------------------
+# SERVE COMPILED FRONTEND (For Docker / All-in-One deployments)
+# ------------------------------------------------------------------------------
+from fastapi.staticfiles import StaticFiles
+
+dist_dir = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+if os.path.exists(dist_dir):
+    app.mount("/", StaticFiles(directory=dist_dir, html=True), name="frontend")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
