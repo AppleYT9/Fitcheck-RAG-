@@ -43,6 +43,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.on_event("startup")
+def prewarm_models():
+    """Pre-loads embedding model on server startup to eliminate cold-start indexing latency for users."""
+    print("[INIT] Pre-warming SentenceTransformer embedding model in background...", flush=True)
+    try:
+        get_embedding_model()
+        print("[INIT] SentenceTransformer model loaded & ready in memory!", flush=True)
+    except Exception as e:
+        print(f"[WARN] Pre-warm note: {e}", flush=True)
+
+
 # In-memory store for session vector stores and metadata
 # session_id -> { "vector_store": ..., "doc_names": { "resume": ..., "jds": [...] } }
 SESSION_STORE = {}
