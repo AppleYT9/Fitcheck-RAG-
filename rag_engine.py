@@ -16,34 +16,23 @@ from functools import lru_cache
 from typing import List, Dict, Any, Tuple, Optional
 import pypdf
 
-try:
-    from langchain_huggingface import HuggingFaceEmbeddings
-except ImportError:
-    from langchain_community.embeddings import HuggingFaceEmbeddings
-
-try:
-    from langchain_chroma import Chroma
-except ImportError:
-    from langchain_community.vectorstores import Chroma
-
-try:
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
-except ImportError:
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
-
+# Lightweight LangChain primitives
 from langchain_core.documents import Document
-from langchain_groq import ChatGroq
-
 
 # ==============================================================================
-# 1. EMBEDDING MODEL (Cached with @lru_cache)
+# 1. EMBEDDING MODEL (Cached with @lru_cache, lazy loaded)
 # ==============================================================================
 @lru_cache(maxsize=1)
-def get_embedding_model() -> HuggingFaceEmbeddings:
+def get_embedding_model():
     """
     Initializes and caches the sentence-transformers embedding model.
     Using 'all-MiniLM-L6-v2' (384 dimensions, fast local execution).
     """
+    try:
+        from langchain_huggingface import HuggingFaceEmbeddings
+    except ImportError:
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+
     return HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2",
         model_kwargs={'device': 'cpu'},
@@ -108,6 +97,11 @@ def create_document_chunks(
     Splits text into chunks of chunk_size=500, chunk_overlap=100.
     Tags each chunk with metadata: {source_type, source_name, chunk_id, page_number}.
     """
+    try:
+        from langchain_text_splitters import RecursiveCharacterTextSplitter
+    except ImportError:
+        from langchain.text_splitter import RecursiveCharacterTextSplitter
+
     doc_pages = extracted_pages if extracted_pages is not None else (pages or [])
 
     text_splitter = RecursiveCharacterTextSplitter(
@@ -148,11 +142,16 @@ def build_fresh_vector_store(
     documents: Any, 
     collection_name: str = "jd_fit_checker",
     session_id: Optional[str] = None
-) -> Chroma:
+):
     """
     Creates a fresh Chroma vector store for the current session.
     Resets any existing collection to prevent cross-session document leakage.
     """
+    try:
+        from langchain_chroma import Chroma
+    except ImportError:
+        from langchain_community.vectorstores import Chroma
+
     embeddings = get_embedding_model()
     
     col_name = collection_name
@@ -216,7 +215,7 @@ def calculate_confidence(top_score: float) -> Tuple[str, str]:
         return "Low confidence — general / conversational query", "yellow"
 
 
-def retrieve_top_chunks(vector_store: Chroma, query: str, top_k: int = 8) -> Dict[str, Any]:
+def retrieve_top_chunks(vector_store: Any, query: str, top_k: int = 8) -> Dict[str, Any]:
     """
     Retrieves top_k chunks across ALL uploaded documents by Cosine Similarity.
     Ensures balanced representation across Resume and JDs for holistic evaluation.
@@ -400,6 +399,7 @@ def generate_fit_analysis(
     last_error = None
     for selected_model in candidate_models:
         try:
+            from langchain_groq import ChatGroq
             llm = ChatGroq(
                 groq_api_key=groq_api_key,
                 model_name=selected_model,
@@ -544,6 +544,7 @@ def generate_recruiter_leaderboard(
     last_error = None
     for selected_model in candidate_models:
         try:
+            from langchain_groq import ChatGroq
             llm = ChatGroq(
                 groq_api_key=groq_api_key,
                 model_name=selected_model,
