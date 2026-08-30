@@ -45,15 +45,21 @@ app.add_middleware(
 )
 
 
+import threading
+
+
 @app.on_event("startup")
 def prewarm_models():
-    """Pre-loads embedding model on server startup to eliminate cold-start indexing latency for users."""
-    print("[INIT] Pre-warming SentenceTransformer embedding model in background...", flush=True)
-    try:
-        get_embedding_model()
-        print("[INIT] SentenceTransformer model loaded & ready in memory!", flush=True)
-    except Exception as e:
-        print(f"[WARN] Pre-warm note: {e}", flush=True)
+    """Pre-loads embedding model in a background thread on server startup so port binding happens instantly."""
+    def _loader():
+        print("[INIT] Pre-warming SentenceTransformer embedding model in background...", flush=True)
+        try:
+            get_embedding_model()
+            print("[INIT] SentenceTransformer model loaded & ready in memory!", flush=True)
+        except Exception as e:
+            print(f"[WARN] Pre-warm note: {e}", flush=True)
+
+    threading.Thread(target=_loader, daemon=True).start()
 
 
 # In-memory store for session vector stores and metadata
