@@ -25,7 +25,8 @@ from rag_engine import (
     build_fresh_vector_store,
     retrieve_top_chunks,
     generate_fit_analysis,
-    generate_recruiter_leaderboard
+    generate_recruiter_leaderboard,
+    get_embedding_model
 )
 
 app = FastAPI(
