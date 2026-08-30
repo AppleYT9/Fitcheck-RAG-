@@ -1,5 +1,8 @@
 # 🎯 Fitcheck - Enterprise Multi-Document RAG & Candidate Screening Engine
 
+🚀 **Live App Link**: [Fitcheck - Multi-Document RAG Candidate Screening](https://fitcheck-rag.onrender.com/)
+
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Fitcheck_on_Render-00C7B7?style=for-the-badge&logo=render&logoColor=white)](https://fitcheck-rag.onrender.com/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?style=flat&logo=FastAPI&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-19-61DAFB.svg?style=flat&logo=React&logoColor=black)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF.svg?style=flat&logo=Vite&logoColor=white)](https://vitejs.dev)
@@ -8,6 +11,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **Fitcheck** is an advanced Multi-Document Retrieval-Augmented Generation (RAG) platform designed for **Job Seekers** and **Recruiting Teams**. Powered by dense vector search (`all-MiniLM-L6-v2`), ChromaDB vector store, Groq ultra-fast LPU inference, ReportLab PDF export, and an automated Algorithmic Fairness pre-screening scanner.
+
+🌐 **Try the Live App Online**: [https://fitcheck-rag.onrender.com/](https://fitcheck-rag.onrender.com/)
 
 ---
 
