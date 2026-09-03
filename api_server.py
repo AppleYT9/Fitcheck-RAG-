@@ -252,7 +252,36 @@ def analyze_fit(req: AnalyzeRequest):
         )
 
     session_data = SESSION_STORE[req.session_id]
-    vector_store = session_data["vector_store"]
+    vector_store = session_data.get("vector_store")
+
+    # If vector store is None (deferred in Recruiter mode), build lazy vector store on demand
+    if vector_store is None:
+        all_chunks = session_data.get("all_chunks", [])
+        if all_chunks:
+            try:
+                vector_store = build_fresh_vector_store(all_chunks, session_id=req.session_id)
+                session_data["vector_store"] = vector_store
+            except Exception as e:
+                print(f"[WARN] Lazy vector store build from all_chunks failed: {e}", flush=True)
+
+    if vector_store is None:
+        # Fallback summary chunk from leaderboard and analysis text
+        summary_text = session_data.get("analysis", "")
+        for cand in session_data.get("leaderboard", []):
+            if isinstance(cand, dict):
+                summary_text += f"\nCandidate {cand.get('name')}: Match {cand.get('score')}%, Verdict: {cand.get('verdict')}. Why Select: {cand.get('why_select')}. Strengths: {cand.get('strengths')}."
+        fallback_chunks = [{
+            "chunk_id": "rec_summary_0",
+            "source_name": "Recruiter_Analysis_Summary",
+            "source_type": "summary",
+            "page_number": 1,
+            "source_text": summary_text
+        }]
+        try:
+            vector_store = build_fresh_vector_store(fallback_chunks, session_id=req.session_id)
+            session_data["vector_store"] = vector_store
+        except Exception as fe:
+            print(f"[WARN] Fallback vector store build failed: {fe}", flush=True)
 
     groq_key = os.getenv("GROQ_API_KEY", "")
     if not groq_key:
@@ -413,6 +442,7 @@ async def recruiter_rank_candidates(
     # Cache session
     SESSION_STORE[session_id] = {
         "vector_store": vector_store,
+        "all_chunks": all_chunks,
         "mode": "recruiter",
         "jd_name": resolved_jd_name,
         "candidate_names": candidate_names,
