@@ -294,7 +294,8 @@ export default function App() {
 
     try {
       const res = await axios.post(`${API_BASE}/recruiter/rank`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000
       });
       setLeaderboard(res.data.leaderboard || []);
       setRecruiterAnalysis(res.data.analysis || '');

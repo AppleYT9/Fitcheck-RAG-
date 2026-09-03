@@ -70,7 +70,7 @@ SESSION_STORE = {}
 class AnalyzeRequest(BaseModel):
     session_id: str
     query: str
-    model_name: Optional[str] = "openai/gpt-oss-20b"
+    model_name: Optional[str] = "llama-3.3-70b-versatile"
 
 
 class ExportReportRequest(BaseModel):
@@ -378,21 +378,28 @@ async def recruiter_rank_candidates(
         candidate_chunks_map[cand_name] = c_chunks
         all_chunks.extend(c_chunks)
 
-    # 3. Build Vector Store
+    # 3. Build Vector Store (deferred — only needed for follow-up chat, not ranking)
     session_id = str(uuid.uuid4())
-    vector_store = build_fresh_vector_store(all_chunks, session_id=session_id)
+    vector_store = None
+    try:
+        vector_store = build_fresh_vector_store(all_chunks, session_id=session_id)
+    except Exception as vs_err:
+        print(f"[WARN] Vector store build skipped (non-blocking): {vs_err}", flush=True)
 
     # 4. Generate Leaderboard Ranking via Groq
+    print(f"[RECRUITER] Starting ranking: {len(candidate_names)} candidates, model={model_name}", flush=True)
     ranking_res = generate_recruiter_leaderboard(
         jd_name=resolved_jd_name,
         jd_chunks=jd_chunks,
         candidate_chunks=candidate_chunks_map,
         groq_api_key=groq_key,
-        model_name=model_name or "llama-3.3-70b-versatile",
+        model_name=model_name or "llama-3.1-8b-instant",
         query=custom_query
     )
+    print(f"[RECRUITER] Ranking complete. Leaderboard entries: {len(ranking_res.get('leaderboard', []))}", flush=True)
 
     if ranking_res.get("analysis", "").startswith("⚠️ Error"):
+        print(f"[RECRUITER ERROR] {ranking_res['analysis']}", flush=True)
         raise HTTPException(status_code=500, detail=ranking_res["analysis"])
 
     duration_ms = (time.time() - t_start) * 1000

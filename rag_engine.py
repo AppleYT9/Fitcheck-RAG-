@@ -408,7 +408,8 @@ def generate_fit_analysis(
             llm = ChatGroq(
                 groq_api_key=groq_api_key,
                 model_name=selected_model,
-                temperature=0.3
+                temperature=0.3,
+                request_timeout=60
             )
             response = llm.invoke(messages)
             raw_text = response.content.strip()
@@ -471,12 +472,12 @@ def generate_recruiter_leaderboard(
     audit_summary = audit_candidate_batch(candidate_raw_texts)
 
     # 2. Format Job Description context
-    jd_text = "\n".join([get_chunk_text(c) for c in jd_chunks])[:4000]
+    jd_text = "\n".join([get_chunk_text(c) for c in jd_chunks])[:2500]
 
     # Format each candidate's resume context
     candidate_summaries = []
     for cand_name, cand_text in candidate_raw_texts.items():
-        truncated_text = cand_text[:3500]
+        truncated_text = cand_text[:2000]
         candidate_summaries.append(f"=== CANDIDATE RESUME: {cand_name} ===\n{truncated_text}\n")
 
     all_candidates_context = "\n\n".join(candidate_summaries)
@@ -529,11 +530,10 @@ def generate_recruiter_leaderboard(
     )
 
     base_candidates = [
-        "llama-3.3-70b-versatile",
         "llama-3.1-8b-instant",
-        "mixtral-8x7b-32768",
-        "deepseek-r1-distill-llama-70b",
-        "gemma2-9b-it"
+        "llama-3.3-70b-versatile",
+        "gemma2-9b-it",
+        "mixtral-8x7b-32768"
     ]
     candidate_models = [model_name] if model_name else []
     for m in base_candidates:
@@ -548,11 +548,14 @@ def generate_recruiter_leaderboard(
     last_error = None
     for selected_model in candidate_models:
         try:
+            print(f"[RECRUITER] Trying model: {selected_model}", flush=True)
             from langchain_groq import ChatGroq
             llm = ChatGroq(
                 groq_api_key=groq_api_key,
                 model_name=selected_model,
-                temperature=0.2
+                temperature=0.2,
+                max_tokens=2048,
+                request_timeout=60
             )
             response = llm.invoke(messages)
             raw_text = response.content.strip()
