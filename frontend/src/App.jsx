@@ -728,9 +728,19 @@ export default function App() {
         msg: `Indexed: ${res.data.resume_name || 'Resume'} + ${res.data.jd_names.length} JD(s)`
       });
     } catch (err) {
+      let errMsg = err.response?.data?.detail;
+      if (!errMsg) {
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+          errMsg = '⚡ Server is warming up AI models. Please try again in a few seconds.';
+        } else if (err.response?.status === 502 || err.response?.status === 503) {
+          errMsg = '⚡ Backend server is booting up. Please wait 5 seconds and try again.';
+        } else {
+          errMsg = 'Error auto-indexing documents. Please try again.';
+        }
+      }
       setIndexStatus({
         type: 'error',
-        msg: err.response?.data?.detail || 'Error auto-indexing documents.'
+        msg: errMsg
       });
     } finally {
       setIsIndexing(false);
@@ -817,11 +827,21 @@ export default function App() {
         scope: loadedScope
       });
     } catch (err) {
+      let errorDetail = err.response?.data?.detail;
+      if (!errorDetail) {
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+          errorDetail = 'Server is warming up AI models. Please click send again in a few seconds.';
+        } else if (err.response?.status === 502 || err.response?.status === 503) {
+          errorDetail = 'Backend server is booting up. Please wait 5 seconds and click send again.';
+        } else {
+          errorDetail = err.message || 'Error analyzing query.';
+        }
+      }
       const errorMsg = {
         role: 'assistant',
-        answer: `⚠️ Error analyzing query: ${err.response?.data?.detail || err.message}`,
+        answer: `⚡ ${errorDetail}`,
         conflicts: '',
-        confidence_label: 'Error',
+        confidence_label: 'Server Booting / Retrying',
         confidence_color: 'yellow',
         grouped_sources: {}
       };
