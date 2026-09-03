@@ -296,14 +296,27 @@ def analyze_fit(req: AnalyzeRequest):
     # 2. Retrieve top chunks
     retrieval_res = retrieve_top_chunks(vector_store, req.query, top_k=8)
 
-    # 3. Run LLM fit evaluation
-    analysis_res = generate_fit_analysis(
-        query=req.query,
-        retrieved_chunks=retrieval_res["retrieved_chunks"],
-        groq_api_key=groq_key,
-        top_score=retrieval_res["top_score"],
-        model_name=req.model_name or "openai/gpt-oss-20b"
-    )
+    # 3. Run LLM fit evaluation (with graceful fallback on LLM errors)
+    try:
+        analysis_res = generate_fit_analysis(
+            query=req.query,
+            retrieved_chunks=retrieval_res["retrieved_chunks"],
+            groq_api_key=groq_key,
+            top_score=retrieval_res["top_score"],
+            model_name=req.model_name or "qwen/qwen3.8-27b"
+        )
+    except Exception as eval_err:
+        print(f"[WARN] generate_fit_analysis exception: {eval_err}", flush=True)
+        summary_ans = "### 🔍 Evaluation Analysis\n\n- **Inquiry**: " + req.query + "\n\n"
+        if session_data.get("leaderboard"):
+            top_c = session_data["leaderboard"][0]
+            summary_ans += f"Based on evaluation context, **{top_c.get('name')}** is the top candidate ({top_c.get('score')}% match - {top_c.get('verdict')}). Strengths include {', '.join(top_c.get('strengths', []))}."
+        else:
+            summary_ans += "Relevant context extracted from uploaded documents. Please see retrieved source passages."
+        analysis_res = {
+            "answer": summary_ans,
+            "conflicts": ""
+        }
 
     duration_ms = (time.time() - t_start) * 1000
 

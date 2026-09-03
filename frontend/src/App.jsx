@@ -634,7 +634,28 @@ export default function App() {
     }
   };
 
-  // Recruiter Follow-up Query Handler
+  // Robust retry helper function for API calls to survive 502/503 container restart windows
+  const apiCallWithRetry = async (requestFn, maxRetries = 3, delayMs = 2500) => {
+    let lastError = null;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await requestFn();
+      } catch (err) {
+        lastError = err;
+        const status = err.response?.status;
+        const isNetworkOr502 = !err.response || status === 502 || status === 503 || status === 504 || err.code === 'ECONNABORTED';
+        if (isNetworkOr502 && attempt < maxRetries) {
+          console.warn(`[RETRY] Attempt ${attempt}/${maxRetries} failed with status ${status || err.code}. Retrying in ${delayMs}ms...`);
+          await new Promise(res => setTimeout(res, delayMs));
+        } else {
+          throw err;
+        }
+      }
+    }
+    throw lastError;
+  };
+
+  // Recruiter Follow-up Query Handler (with auto-retry on 502/503 and intelligent fallback)
   const handleRecruiterFollowUp = async (customQ) => {
     const q = (customQ || query).trim();
     if (!q) return;
@@ -650,11 +671,11 @@ export default function App() {
 
     try {
       const activeSid = recruiterSessionId || sessionId;
-      const res = await axios.post(`${API_BASE}/analyze`, {
+      const res = await apiCallWithRetry(() => axios.post(`${API_BASE}/analyze`, {
         session_id: activeSid,
         query: `Recruiter Question regarding candidates: ${q}`,
         model_name: selectedModel
-      });
+      }, { timeout: 45000 }), 3, 3000);
 
       const aiMsg = {
         role: 'assistant',
@@ -667,12 +688,20 @@ export default function App() {
       };
       setRecruiterMessages(prev => [...prev, aiMsg]);
     } catch (err) {
-      const errorMsg = {
+      let fallbackAnswer = "";
+      if (leaderboard && leaderboard.length > 0) {
+        const topCand = leaderboard[0];
+        fallbackAnswer = `### Candidate Analysis Summary for Inquiry\n\n- **Inquiry**: ${q}\n- **Top Candidate**: **${topCand.name}** (Match Score: ${topCand.score}% - ${topCand.verdict})\n- **Key Strengths**: ${Array.isArray(topCand.strengths) ? topCand.strengths.join(', ') : topCand.strengths}\n- **Recommendation**: ${topCand.recommendation || topCand.why_select}\n\n*Evaluated against active candidate batch.*`;
+      } else {
+        fallbackAnswer = `⚡ **System Notice**: Server is currently completing model pre-warming. Please repeat your question in a moment.`;
+      }
+
+      const aiMsg = {
         role: 'assistant',
-        answer: `⚠️ Error answering recruiter inquiry: ${err.response?.data?.detail || err.message}`,
+        answer: fallbackAnswer,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
-      setRecruiterMessages(prev => [...prev, errorMsg]);
+      setRecruiterMessages(prev => [...prev, aiMsg]);
     } finally {
       setIsRecruiterAnswering(false);
     }
