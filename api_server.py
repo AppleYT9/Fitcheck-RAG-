@@ -70,7 +70,7 @@ SESSION_STORE = {}
 class AnalyzeRequest(BaseModel):
     session_id: str
     query: str
-    model_name: Optional[str] = "llama-3.3-70b-versatile"
+    model_name: Optional[str] = "qwen/qwen3.8-27b"
 
 
 class ExportReportRequest(BaseModel):
@@ -105,7 +105,7 @@ def get_available_models():
         except Exception:
             pass
 
-    return {"models": ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]}
+    return {"models": ["qwen/qwen3.8-27b", "openai/gpt-oss-20b", "openai/gpt-oss-120b"]}
 
 
 @app.post("/api/ingest")
@@ -327,7 +327,7 @@ async def recruiter_rank_candidates(
     jd_text: Optional[str] = Form(None),
     jd_name: Optional[str] = Form("Target_Job_Description"),
     resumes: List[UploadFile] = File(default=[]),
-    model_name: Optional[str] = Form("llama-3.3-70b-versatile"),
+    model_name: Optional[str] = Form("qwen/qwen3.8-27b"),
     custom_query: Optional[str] = Form(None)
 ):
     """
@@ -393,7 +393,7 @@ async def recruiter_rank_candidates(
         jd_chunks=jd_chunks,
         candidate_chunks=candidate_chunks_map,
         groq_api_key=groq_key,
-        model_name=model_name or "llama-3.1-8b-instant",
+        model_name=model_name or "qwen/qwen3.8-27b",
         query=custom_query
     )
     print(f"[RECRUITER] Ranking complete. Leaderboard entries: {len(ranking_res.get('leaderboard', []))}", flush=True)

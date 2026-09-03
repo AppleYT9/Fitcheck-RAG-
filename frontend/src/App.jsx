@@ -38,12 +38,12 @@ export default function App() {
     return localStorage.getItem('jd_fit_session_id') || null;
   });
   const [selectedModel, setSelectedModel] = useState(() => {
-    return localStorage.getItem('jd_fit_selected_model') || 'llama-3.3-70b-versatile';
+    return localStorage.getItem('jd_fit_selected_model') || 'qwen/qwen3.8-27b';
   });
   const [availableModels, setAvailableModels] = useState([
-    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', tag: 'Flagship 70B' },
-    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B', tag: 'Ultra-Fast' },
-    { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B', tag: 'High Context' }
+    { id: 'qwen/qwen3.8-27b', label: 'Qwen 3.8 27B', tag: 'Reasoning' },
+    { id: 'openai/gpt-oss-20b', label: 'GPT-OSS 20B', tag: 'Ultra-Fast' },
+    { id: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B', tag: 'Flagship 120B' }
   ]);
   const [groqConnected, setGroqConnected] = useState(true);
   const [newJdName, setNewJdName] = useState('');

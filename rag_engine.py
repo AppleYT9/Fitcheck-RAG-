@@ -385,11 +385,11 @@ def generate_fit_analysis(
 
     # Verified Groq models in order of priority (active on Groq account)
     base_candidates = [
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
-        "mixtral-8x7b-32768",
-        "deepseek-r1-distill-llama-70b",
-        "gemma2-9b-it"
+        "qwen/qwen3.8-27b",
+        "openai/gpt-oss-20b",
+        "openai/gpt-oss-120b",
+        "qwen/qwen3.6-27b",
+        "groq/compound-mini"
     ]
     candidate_models = [model_name] if model_name else []
     for m in base_candidates:
@@ -442,7 +442,7 @@ def generate_recruiter_leaderboard(
     jd_chunks: List[Dict[str, Any]],
     candidate_chunks: Dict[str, List[Dict[str, Any]]],
     groq_api_key: str,
-    model_name: str = "llama-3.3-70b-versatile",
+    model_name: str = "qwen/qwen3.8-27b",
     query: Optional[str] = None
 ) -> Dict[str, Any]:
     """
@@ -530,10 +530,11 @@ def generate_recruiter_leaderboard(
     )
 
     base_candidates = [
-        "llama-3.1-8b-instant",
-        "llama-3.3-70b-versatile",
-        "gemma2-9b-it",
-        "mixtral-8x7b-32768"
+        "qwen/qwen3.8-27b",
+        "openai/gpt-oss-20b",
+        "openai/gpt-oss-120b",
+        "qwen/qwen3.6-27b",
+        "groq/compound-mini"
     ]
     candidate_models = [model_name] if model_name else []
     for m in base_candidates:
