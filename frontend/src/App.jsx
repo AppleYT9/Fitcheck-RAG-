@@ -324,9 +324,19 @@ export default function App() {
         jdName: resolvedJdName
       });
     } catch (err) {
+      let errMsg = err.response?.data?.detail;
+      if (!errMsg) {
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+          errMsg = '⚡ Server is warming up AI models. Please click "Rank Candidates" again in a few seconds.';
+        } else if (err.response?.status === 502 || err.response?.status === 503) {
+          errMsg = '⚡ Backend server is booting up. Please wait 5 seconds and click "Rank Candidates" again.';
+        } else {
+          errMsg = 'Error generating recruiter leaderboard. Please check your connection and try again.';
+        }
+      }
       setRankingStatus({
         type: 'error',
-        msg: err.response?.data?.detail || 'Error generating recruiter leaderboard.'
+        msg: errMsg
       });
     } finally {
       setIsRanking(false);
