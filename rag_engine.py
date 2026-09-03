@@ -31,7 +31,10 @@ def get_embedding_model():
     try:
         from langchain_huggingface import HuggingFaceEmbeddings
     except ImportError:
-        from langchain_community.embeddings import HuggingFaceEmbeddings
+        try:
+            from langchain_community.embeddings import HuggingFaceEmbeddings
+        except ImportError:
+            from langchain.embeddings import HuggingFaceEmbeddings
 
     return HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2",
@@ -150,7 +153,10 @@ def build_fresh_vector_store(
     try:
         from langchain_chroma import Chroma
     except ImportError:
-        from langchain_community.vectorstores import Chroma
+        try:
+            from langchain_community.vectorstores import Chroma
+        except ImportError:
+            from langchain.vectorstores import Chroma
 
     embeddings = get_embedding_model()
     
