@@ -378,13 +378,9 @@ async def recruiter_rank_candidates(
         candidate_chunks_map[cand_name] = c_chunks
         all_chunks.extend(c_chunks)
 
-    # 3. Build Vector Store (deferred — only needed for follow-up chat, not ranking)
+    # 3. Skip heavy CPU vector store embedding during batch ranking for 10x speed on cloud instances
     session_id = str(uuid.uuid4())
     vector_store = None
-    try:
-        vector_store = build_fresh_vector_store(all_chunks, session_id=session_id)
-    except Exception as vs_err:
-        print(f"[WARN] Vector store build skipped (non-blocking): {vs_err}", flush=True)
 
     # 4. Generate Leaderboard Ranking via Groq
     print(f"[RECRUITER] Starting ranking: {len(candidate_names)} candidates, model={model_name}", flush=True)
