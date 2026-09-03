@@ -105,7 +105,7 @@ def get_available_models():
         except Exception:
             pass
 
-    return {"models": ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]}
+    return {"models": ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]}
 
 
 @app.post("/api/ingest")
@@ -326,7 +326,7 @@ async def recruiter_rank_candidates(
     jd_file: Optional[UploadFile] = File(None),
     jd_text: Optional[str] = Form(None),
     jd_name: Optional[str] = Form("Target_Job_Description"),
-    resumes: List[UploadFile] = File(...),
+    resumes: List[UploadFile] = File(default=[]),
     model_name: Optional[str] = Form("llama-3.3-70b-versatile"),
     custom_query: Optional[str] = Form(None)
 ):
@@ -391,6 +391,9 @@ async def recruiter_rank_candidates(
         model_name=model_name or "llama-3.3-70b-versatile",
         query=custom_query
     )
+
+    if ranking_res.get("analysis", "").startswith("⚠️ Error"):
+        raise HTTPException(status_code=500, detail=ranking_res["analysis"])
 
     duration_ms = (time.time() - t_start) * 1000
 

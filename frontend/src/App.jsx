@@ -38,12 +38,12 @@ export default function App() {
     return localStorage.getItem('jd_fit_session_id') || null;
   });
   const [selectedModel, setSelectedModel] = useState(() => {
-    return localStorage.getItem('jd_fit_selected_model') || 'openai/gpt-oss-120b';
+    return localStorage.getItem('jd_fit_selected_model') || 'llama-3.3-70b-versatile';
   });
   const [availableModels, setAvailableModels] = useState([
-    { id: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B', tag: 'Flagship 120B' },
-    { id: 'openai/gpt-oss-20b', label: 'GPT-OSS 20B', tag: 'Ultra-Fast' },
-    { id: 'qwen/qwen3.8-27b', label: 'Qwen 3.8 27B', tag: 'Reasoning' }
+    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', tag: 'Flagship 70B' },
+    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B', tag: 'Ultra-Fast' },
+    { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B', tag: 'High Context' }
   ]);
   const [groqConnected, setGroqConnected] = useState(true);
   const [newJdName, setNewJdName] = useState('');
@@ -211,7 +211,17 @@ export default function App() {
     try {
       const res = await axios.get(`${API_BASE}/models`);
       if (res.data.models && res.data.models.length > 0) {
-        setModels(res.data.models);
+        const mapped = res.data.models.map(m => {
+          if (typeof m === 'object' && m.id) return m;
+          const nameStr = String(m);
+          const shortName = nameStr.split('/').pop().replace(/-/g, ' ').toUpperCase();
+          return {
+            id: nameStr,
+            label: shortName,
+            tag: nameStr.includes('70b') ? 'Flagship' : (nameStr.includes('8b') ? 'Fast' : 'Groq')
+          };
+        });
+        setAvailableModels(mapped);
       }
     } catch (e) {
       console.warn("Error fetching models:", e);
