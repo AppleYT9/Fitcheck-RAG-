@@ -383,15 +383,14 @@ def generate_fit_analysis(
 
     user_prompt = f"DOCUMENT CONTEXT:\n{formatted_context}\n\nUSER QUERY:\n{query}"
 
-    # Verified Groq models in order of priority (active on Groq account)
+    # Verified Groq models in order of priority (active on Groq API)
     base_candidates = [
-        "qwen/qwen3.8-27b",
-        "openai/gpt-oss-20b",
-        "openai/gpt-oss-120b",
-        "qwen/qwen3.6-27b",
-        "groq/compound-mini"
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+        "mixtral-8x7b-32768",
+        "gemma2-9b-it"
     ]
-    candidate_models = [model_name] if model_name else []
+    candidate_models = [model_name] if model_name and not ("qwen" in model_name or "gpt-oss" in model_name) else []
     for m in base_candidates:
         if m not in candidate_models:
             candidate_models.append(m)
@@ -409,7 +408,7 @@ def generate_fit_analysis(
                 groq_api_key=groq_api_key,
                 model_name=selected_model,
                 temperature=0.3,
-                request_timeout=60
+                request_timeout=15
             )
             response = llm.invoke(messages)
             raw_text = response.content.strip()
@@ -515,13 +514,12 @@ def generate_recruiter_leaderboard(
     )
 
     base_candidates = [
-        "openai/gpt-oss-20b",
-        "groq/compound-mini",
-        "qwen/qwen3.8-27b",
-        "openai/gpt-oss-120b",
-        "qwen/qwen3.6-27b"
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+        "mixtral-8x7b-32768",
+        "gemma2-9b-it"
     ]
-    candidate_models = [model_name] if model_name else []
+    candidate_models = [model_name] if model_name and not ("qwen" in model_name or "gpt-oss" in model_name) else []
     for m in base_candidates:
         if m not in candidate_models:
             candidate_models.append(m)
@@ -541,7 +539,7 @@ def generate_recruiter_leaderboard(
                 model_name=selected_model,
                 temperature=0.1,
                 max_tokens=1024,
-                request_timeout=25
+                request_timeout=15
             )
             response = llm.invoke(messages)
             raw_text = response.content.strip()

@@ -70,7 +70,7 @@ SESSION_STORE = {}
 class AnalyzeRequest(BaseModel):
     session_id: str
     query: str
-    model_name: Optional[str] = "qwen/qwen3.8-27b"
+    model_name: Optional[str] = "llama-3.3-70b-versatile"
 
 
 class ExportReportRequest(BaseModel):
@@ -105,7 +105,7 @@ def get_available_models():
         except Exception:
             pass
 
-    return {"models": ["qwen/qwen3.8-27b", "openai/gpt-oss-20b", "openai/gpt-oss-120b"]}
+    return {"models": ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"]}
 
 
 @app.post("/api/ingest")
@@ -303,7 +303,7 @@ def analyze_fit(req: AnalyzeRequest):
             retrieved_chunks=retrieval_res["retrieved_chunks"],
             groq_api_key=groq_key,
             top_score=retrieval_res["top_score"],
-            model_name=req.model_name or "qwen/qwen3.8-27b"
+            model_name=req.model_name or "llama-3.3-70b-versatile"
         )
     except Exception as eval_err:
         print(f"[WARN] generate_fit_analysis exception: {eval_err}", flush=True)
@@ -369,7 +369,7 @@ async def recruiter_rank_candidates(
     jd_text: Optional[str] = Form(None),
     jd_name: Optional[str] = Form("Target_Job_Description"),
     resumes: List[UploadFile] = File(default=[]),
-    model_name: Optional[str] = Form("qwen/qwen3.8-27b"),
+    model_name: Optional[str] = Form("llama-3.3-70b-versatile"),
     custom_query: Optional[str] = Form(None)
 ):
     """
@@ -431,7 +431,7 @@ async def recruiter_rank_candidates(
         jd_chunks=jd_chunks,
         candidate_chunks=candidate_chunks_map,
         groq_api_key=groq_key,
-        model_name=model_name or "qwen/qwen3.8-27b",
+        model_name=model_name or "llama-3.3-70b-versatile",
         query=custom_query
     )
     print(f"[RECRUITER] Ranking complete. Leaderboard entries: {len(ranking_res.get('leaderboard', []))}", flush=True)

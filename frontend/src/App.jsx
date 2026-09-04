@@ -38,12 +38,13 @@ export default function App() {
     return localStorage.getItem('jd_fit_session_id') || null;
   });
   const [selectedModel, setSelectedModel] = useState(() => {
-    return localStorage.getItem('jd_fit_selected_model') || 'qwen/qwen3.8-27b';
+    return localStorage.getItem('jd_fit_selected_model') || 'llama-3.3-70b-versatile';
   });
   const [availableModels, setAvailableModels] = useState([
-    { id: 'qwen/qwen3.8-27b', label: 'Qwen 3.8 27B', tag: 'Reasoning' },
-    { id: 'openai/gpt-oss-20b', label: 'GPT-OSS 20B', tag: 'Ultra-Fast' },
-    { id: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B', tag: 'Flagship 120B' }
+    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', tag: 'Flagship 70B' },
+    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B', tag: 'Ultra-Fast' },
+    { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B', tag: 'High-Context' },
+    { id: 'gemma2-9b-it', label: 'Gemma 2 9B', tag: 'Google Gemma' }
   ]);
   const [groqConnected, setGroqConnected] = useState(true);
   const [newJdName, setNewJdName] = useState('');
@@ -1469,7 +1470,7 @@ export default function App() {
               >
                 <span>Fitcheck</span>
                 <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
-                  ({selectedModel === 'openai/gpt-oss-120b' ? 'GPT 120B' : (selectedModel === 'openai/gpt-oss-20b' ? 'GPT 20B' : 'Qwen 27B')})
+                  ({selectedModel === 'llama-3.3-70b-versatile' ? 'Llama 70B' : (selectedModel === 'llama-3.1-8b-instant' ? 'Llama 8B' : 'Mixtral 8x7B')})
                 </span>
                 <ChevronDown size={14} style={{ color: '#6b7280' }} />
               </button>
@@ -1488,9 +1489,10 @@ export default function App() {
                   minWidth: '260px'
                 }}>
                   {[
-                    { id: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B', tag: 'Flagship 120B' },
-                    { id: 'openai/gpt-oss-20b', label: 'GPT-OSS 20B', tag: 'Ultra-Fast' },
-                    { id: 'qwen/qwen3.8-27b', label: 'Qwen 3.8 27B', tag: 'Reasoning' }
+                    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', tag: 'Flagship 70B' },
+                    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B', tag: 'Ultra-Fast (~0.3s)' },
+                    { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B', tag: 'High-Context' },
+                    { id: 'gemma2-9b-it', label: 'Gemma 2 9B', tag: 'Google Gemma' }
                   ].map(m => (
                     <button
                       key={m.id}
