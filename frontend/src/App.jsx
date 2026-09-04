@@ -7,7 +7,7 @@ import {
   Search, Globe, Settings, LogOut, Share2, MoreVertical, Plus,
   Mic, ArrowUp, PanelLeft, Laptop, BookOpen, User, X, Check,
   FileCheck, Edit3, ClipboardList, Info, Trophy, Users, Award, Star,
-  Download
+  Download, Copy
 } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE || (typeof window !== 'undefined' && window.location.port === '5173' ? 'http://localhost:8000/api' : '/api');
@@ -1151,10 +1151,15 @@ export default function App() {
                     style={{ display: 'none' }}
                     onClick={(e) => { e.target.value = null; }}
                     onChange={(e) => {
-                      const files = Array.from(e.target.files).slice(0, 5);
-                      if (files.length > 0) {
-                        setJdFiles(files);
-                        autoIndex(resumeFile, files, pastedJds);
+                      const newFiles = Array.from(e.target.files);
+                      if (newFiles.length > 0) {
+                        setJdFiles(prev => {
+                          const existingKeys = new Set(prev.map(f => `${f.name}_${f.size}`));
+                          const filteredNew = newFiles.filter(f => !existingKeys.has(`${f.name}_${f.size}`));
+                          const updated = [...prev, ...filteredNew].slice(0, 5);
+                          autoIndex(resumeFile, updated, pastedJds);
+                          return updated;
+                        });
                       }
                     }}
                   />
@@ -1202,20 +1207,34 @@ export default function App() {
               {/* List of Pasted JDs */}
               {pastedJds.map((jd, idx) => (
                 <div key={idx} className="file-item-pill">
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '220px' }}>
-                    ✍️ {jd.name} (Pasted)
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }}>
+                    ✍️ {jd.name}
                   </span>
-                  <button 
-                    className="file-remove-btn" 
-                    onClick={() => {
-                      const updated = pastedJds.filter((_, i) => i !== idx);
-                      setPastedJds(updated);
-                      autoIndex(resumeFile, jdFiles, updated);
-                    }}
-                    title="Remove this JD"
-                  >
-                    <Trash2 size={12} />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <button 
+                      className="file-remove-btn" 
+                      onClick={() => {
+                        navigator.clipboard.writeText(jd.text);
+                        setShareToast(`📋 Copied "${jd.name}" text to clipboard!`);
+                        setTimeout(() => setShareToast(null), 3000);
+                      }}
+                      title="Copy Job Description text"
+                      style={{ color: '#d4ff00' }}
+                    >
+                      <Copy size={12} />
+                    </button>
+                    <button 
+                      className="file-remove-btn" 
+                      onClick={() => {
+                        const updated = pastedJds.filter((_, i) => i !== idx);
+                        setPastedJds(updated);
+                        autoIndex(resumeFile, jdFiles, updated);
+                      }}
+                      title="Remove this JD"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 </div>
               ))}
 
@@ -1335,8 +1354,14 @@ export default function App() {
                 style={{ display: 'none' }}
                 onClick={(e) => { e.target.value = null; }}
                 onChange={(e) => {
-                  const files = Array.from(e.target.files).slice(0, 10);
-                  setRecruiterResumes(files);
+                  const newFiles = Array.from(e.target.files);
+                  if (newFiles.length > 0) {
+                    setRecruiterResumes(prev => {
+                      const existingKeys = new Set(prev.map(f => `${f.name}_${f.size}`));
+                      const filteredNew = newFiles.filter(f => !existingKeys.has(`${f.name}_${f.size}`));
+                      return [...prev, ...filteredNew].slice(0, 10);
+                    });
+                  }
                 }}
               />
               <label 
@@ -2570,13 +2595,32 @@ Qualifications:
                         padding: '6px 12px',
                         fontSize: '12.5px'
                       }}>
-                        <span style={{ fontWeight: '600' }}>💼 {jd.name}</span>
-                        <button 
-                          onClick={() => setPastedJds(prev => prev.filter((_, i) => i !== idx))}
-                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                        <span style={{ fontWeight: '600', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          💼 {jd.name}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(jd.text);
+                              setShareToast(`📋 Copied "${jd.name}" text to clipboard!`);
+                              setTimeout(() => setShareToast(null), 3000);
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', fontWeight: '600' }}
+                            title="Copy this JD text"
+                          >
+                            <Copy size={13} />
+                            <span>Copy JD</span>
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => setPastedJds(prev => prev.filter((_, i) => i !== idx))}
+                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                            title="Delete JD"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
