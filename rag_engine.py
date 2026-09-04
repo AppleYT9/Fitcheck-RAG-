@@ -331,6 +331,21 @@ COMMON_TECH_SKILLS = [
 ]
 
 
+def extract_evidence_snippets(text: str, keywords: List[str], max_length: int = 140) -> Dict[str, str]:
+    snippets = {}
+    lines = [line.strip() for line in re.split(r'[\n\.\•\-\;]', text) if len(line.strip()) > 8]
+    for kw in keywords:
+        kw_lower = kw.lower()
+        matched_line = ""
+        for line in lines:
+            if re.search(r'\b' + re.escape(kw_lower) + r'\b', line.lower()):
+                cleaned = re.sub(r'^\W+', '', line)
+                matched_line = cleaned[:max_length] + ("..." if len(cleaned) > max_length else "")
+                break
+        snippets[kw] = matched_line
+    return snippets
+
+
 def analyze_candidate_vs_jd(cand_text: str, jd_text: str) -> Dict[str, Any]:
     cand_lower = cand_text.lower()
     jd_lower = jd_text.lower()
@@ -351,17 +366,24 @@ def analyze_candidate_vs_jd(cand_text: str, jd_text: str) -> Dict[str, Any]:
         matched_skills = cand_skills[:4] or ["Technical Qualifications", "Relevant Experience"]
         missing_skills = ["Advanced Production Scaling", "Production Monitoring"]
 
+    matched_evidence = extract_evidence_snippets(cand_text, matched_skills[:5])
+    missing_evidence = extract_evidence_snippets(jd_text, missing_skills[:5])
+
     if jd_skills:
         score = max(55, min(96, int((len(matched_skills) / max(1, len(jd_skills))) * 100)))
     else:
         score = 82
 
+    top_evidence = [f'"{ev}"' for ev in matched_evidence.values() if ev]
     why_select = (
-        f"Verified candidate experience in {', '.join(matched_skills[:4])}. Fulfills core technical role criteria."
+        f"Verified resume evidence for {', '.join(matched_skills[:4])}. "
+        f"Resume snippet: {top_evidence[0] if top_evidence else 'Demonstrated technical qualifications.'}"
     ) if matched_skills else "Solid background in computer science and technical problem solving."
 
+    top_missing_ev = [f'"{ev}"' for ev in missing_evidence.values() if ev]
     why_not_select = (
-        f"Missing key JD requirements: {', '.join(missing_skills[:4])}. Needs demonstration of production deployment."
+        f"Missing key JD requirements: {', '.join(missing_skills[:4])}. "
+        f"Target JD requirement: {top_missing_ev[0] if top_missing_ev else 'Production experience required.'}"
     ) if missing_skills else "Minor gaps in advanced architecture depth."
 
     what_to_add = (
@@ -372,6 +394,8 @@ def analyze_candidate_vs_jd(cand_text: str, jd_text: str) -> Dict[str, Any]:
         "score": score,
         "matched_skills": matched_skills[:5],
         "missing_skills": missing_skills[:5],
+        "matched_evidence": matched_evidence,
+        "missing_evidence": missing_evidence,
         "why_select": why_select,
         "why_not_select": why_not_select,
         "what_to_add": what_to_add
@@ -499,8 +523,23 @@ def generate_fit_analysis(
     eval_res = analyze_candidate_vs_jd(resume_text, jd_text)
     score_pct = max(65, min(95, int(top_score * 100))) if top_score > 0 else eval_res["score"]
 
-    matched_list = "\n".join([f"- **{s}**: Demonstrated skill match against target JD requirements." for s in (eval_res["matched_skills"] or ["Core Technical Background"])])
-    missing_list = "\n".join([f"- **{s}**: Specified in target JD but missing or unevidenced in resume." for s in (eval_res["missing_skills"] or ["Advanced Production Scaling"])])
+    matched_items = []
+    for s in (eval_res["matched_skills"] or ["Core Technical Background"]):
+        ev = eval_res.get("matched_evidence", {}).get(s, "")
+        if ev:
+            matched_items.append(f"- **{s}**: Verified in resume — *\"{ev}\"*")
+        else:
+            matched_items.append(f"- **{s}**: Listed in candidate resume experience.")
+    matched_list = "\n".join(matched_items)
+
+    missing_items = []
+    for s in (eval_res["missing_skills"] or ["Advanced Production Scaling"]):
+        ev = eval_res.get("missing_evidence", {}).get(s, "")
+        if ev:
+            missing_items.append(f"- **{s}**: Required in JD (*\"{ev}\"*) but missing or unevidenced in candidate resume.")
+        else:
+            missing_items.append(f"- **{s}**: Required in target JD but not found in candidate resume.")
+    missing_list = "\n".join(missing_items)
 
     q_lower = query.lower()
 
