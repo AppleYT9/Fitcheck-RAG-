@@ -235,10 +235,16 @@ def analyze_fit(req: AnalyzeRequest):
     Retrieves top chunks and generates fit analysis + conflict detection.
     """
     if req.session_id not in SESSION_STORE:
-        raise HTTPException(
-            status_code=404, 
-            detail="Session not found. Please upload a resume and JD first."
-        )
+        print(f"[INFO] session {req.session_id} not in store. Auto-loading sample dataset...", flush=True)
+        try:
+            sample_res = load_sample_dataset()
+            SESSION_STORE[req.session_id] = SESSION_STORE[sample_res["session_id"]]
+        except Exception as se:
+            print(f"[WARN] Auto sample load for session failed: {se}", flush=True)
+            raise HTTPException(
+                status_code=400,
+                detail="Session not found. Please upload a resume and JD first."
+            )
 
     session_data = SESSION_STORE[req.session_id]
     vector_store = session_data.get("vector_store")
