@@ -383,10 +383,19 @@ def generate_fit_analysis(
 
     user_prompt = f"DOCUMENT CONTEXT:\n{formatted_context}\n\nUSER QUERY:\n{query}"
 
-    ALLOWED_GROQ_MODELS = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
-    candidate_models = ["llama-3.1-8b-instant"]
-    if model_name == "llama-3.3-70b-versatile":
-        candidate_models.insert(0, "llama-3.3-70b-versatile")
+    ALLOWED_GROQ_MODELS = [
+        "llama-3.1-8b-instant",
+        "llama-3.3-70b-versatile",
+        "llama-3.2-3b-preview",
+        "llama-3.2-1b-preview",
+        "gemma2-9b-it",
+        "deepseek-r1-distill-llama-70b"
+    ]
+    candidate_models = []
+    if model_name in ALLOWED_GROQ_MODELS:
+        candidate_models.append(model_name)
+    if "llama-3.1-8b-instant" not in candidate_models:
+        candidate_models.append("llama-3.1-8b-instant")
     for m in ALLOWED_GROQ_MODELS:
         if m not in candidate_models:
             candidate_models.append(m)
@@ -404,7 +413,8 @@ def generate_fit_analysis(
                 groq_api_key=groq_api_key,
                 model_name=selected_model,
                 temperature=0.3,
-                request_timeout=12
+                request_timeout=3,
+                max_retries=1
             )
             response = llm.invoke(messages)
             raw_text = response.content.strip()
@@ -418,6 +428,9 @@ def generate_fit_analysis(
         except Exception as e:
             last_error = e
             print(f"[LLM WARN] Model {selected_model} failed: {e}", flush=True)
+            err_str = str(e).lower()
+            if "api_key" in err_str or "api key" in err_str or "401" in err_str or "unauthorized" in err_str:
+                break
             continue
 
     # Resilient Structured Analysis Fallback Generator (ensures 100% SLA uptime)
@@ -524,10 +537,19 @@ def generate_recruiter_leaderboard(
         "Provide ranking and <JSON_LEADERBOARD>."
     )
 
-    ALLOWED_GROQ_MODELS = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
+    ALLOWED_GROQ_MODELS = [
+        "llama-3.1-8b-instant",
+        "llama-3.3-70b-versatile",
+        "llama-3.2-3b-preview",
+        "llama-3.2-1b-preview",
+        "gemma2-9b-it",
+        "deepseek-r1-distill-llama-70b"
+    ]
     candidate_models = []
     if model_name in ALLOWED_GROQ_MODELS:
         candidate_models.append(model_name)
+    if "llama-3.1-8b-instant" not in candidate_models:
+        candidate_models.append("llama-3.1-8b-instant")
     for m in ALLOWED_GROQ_MODELS:
         if m not in candidate_models:
             candidate_models.append(m)
@@ -547,7 +569,8 @@ def generate_recruiter_leaderboard(
                 model_name=selected_model,
                 temperature=0.1,
                 max_tokens=1024,
-                request_timeout=15
+                request_timeout=4,
+                max_retries=1
             )
             response = llm.invoke(messages)
             raw_text = response.content.strip()
