@@ -39,7 +39,7 @@ export default function App() {
   });
   const [selectedModel, setSelectedModel] = useState(() => {
     const saved = localStorage.getItem('jd_fit_selected_model');
-    if (saved && (saved.includes('gpt-oss') || saved.includes('qwen') || saved.includes('3.8'))) {
+    if (saved && (saved.includes('gpt-oss') || saved.includes('qwen') || saved.includes('3.8') || saved.includes('mixtral'))) {
       localStorage.removeItem('jd_fit_selected_model');
       return 'llama-3.1-8b-instant';
     }
@@ -48,7 +48,6 @@ export default function App() {
   const [availableModels, setAvailableModels] = useState([
     { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B', tag: 'Ultra-Fast (~0.3s)' },
     { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', tag: 'Flagship 70B' },
-    { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B', tag: 'High-Context' },
     { id: 'gemma2-9b-it', label: 'Gemma 2 9B', tag: 'Google Gemma' }
   ]);
   const [groqConnected, setGroqConnected] = useState(true);
@@ -219,7 +218,7 @@ export default function App() {
       if (res.data.models && res.data.models.length > 0) {
         const validModels = res.data.models.filter(m => {
           const nameStr = typeof m === 'object' ? m.id : String(m);
-          return !nameStr.includes('gpt-oss') && !nameStr.includes('qwen');
+          return !nameStr.includes('gpt-oss') && !nameStr.includes('qwen') && !nameStr.includes('mixtral');
         });
         if (validModels.length > 0) {
           const mapped = validModels.map(m => {
