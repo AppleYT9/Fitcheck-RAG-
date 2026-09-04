@@ -38,11 +38,16 @@ export default function App() {
     return localStorage.getItem('jd_fit_session_id') || null;
   });
   const [selectedModel, setSelectedModel] = useState(() => {
-    return localStorage.getItem('jd_fit_selected_model') || 'llama-3.3-70b-versatile';
+    const saved = localStorage.getItem('jd_fit_selected_model');
+    if (saved && (saved.includes('gpt-oss') || saved.includes('qwen') || saved.includes('3.8'))) {
+      localStorage.removeItem('jd_fit_selected_model');
+      return 'llama-3.3-70b-versatile';
+    }
+    return saved || 'llama-3.3-70b-versatile';
   });
   const [availableModels, setAvailableModels] = useState([
     { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', tag: 'Flagship 70B' },
-    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B', tag: 'Ultra-Fast' },
+    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B', tag: 'Ultra-Fast (~0.3s)' },
     { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B', tag: 'High-Context' },
     { id: 'gemma2-9b-it', label: 'Gemma 2 9B', tag: 'Google Gemma' }
   ]);
@@ -212,17 +217,33 @@ export default function App() {
     try {
       const res = await axios.get(`${API_BASE}/models`);
       if (res.data.models && res.data.models.length > 0) {
-        const mapped = res.data.models.map(m => {
-          if (typeof m === 'object' && m.id) return m;
-          const nameStr = String(m);
-          const shortName = nameStr.split('/').pop().replace(/-/g, ' ').toUpperCase();
-          return {
-            id: nameStr,
-            label: shortName,
-            tag: nameStr.includes('70b') ? 'Flagship' : (nameStr.includes('8b') ? 'Fast' : 'Groq')
-          };
+        const validModels = res.data.models.filter(m => {
+          const nameStr = typeof m === 'object' ? m.id : String(m);
+          return !nameStr.includes('gpt-oss') && !nameStr.includes('qwen');
         });
-        setAvailableModels(mapped);
+        if (validModels.length > 0) {
+          const mapped = validModels.map(m => {
+            if (typeof m === 'object' && m.id) return m;
+            const nameStr = String(m);
+            let label = nameStr.split('/').pop().replace(/-/g, ' ').toUpperCase();
+            let tag = 'Groq LPUs';
+            if (nameStr.includes('70b')) {
+              label = 'Llama 3.3 70B';
+              tag = 'Flagship 70B';
+            } else if (nameStr.includes('8b')) {
+              label = 'Llama 3.1 8B';
+              tag = 'Ultra-Fast (~0.3s)';
+            } else if (nameStr.includes('mixtral')) {
+              label = 'Mixtral 8x7B';
+              tag = 'High-Context';
+            } else if (nameStr.includes('gemma')) {
+              label = 'Gemma 2 9B';
+              tag = 'Google Gemma';
+            }
+            return { id: nameStr, label, tag };
+          });
+          setAvailableModels(mapped);
+        }
       }
     } catch (e) {
       console.warn("Error fetching models:", e);
@@ -1488,12 +1509,7 @@ export default function App() {
                   zIndex: 50,
                   minWidth: '260px'
                 }}>
-                  {[
-                    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', tag: 'Flagship 70B' },
-                    { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B', tag: 'Ultra-Fast (~0.3s)' },
-                    { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B', tag: 'High-Context' },
-                    { id: 'gemma2-9b-it', label: 'Gemma 2 9B', tag: 'Google Gemma' }
-                  ].map(m => (
+                  {availableModels.map(m => (
                     <button
                       key={m.id}
                       onClick={() => {
