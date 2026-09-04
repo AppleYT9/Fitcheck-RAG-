@@ -94,18 +94,7 @@ def get_available_models():
     """
     Returns only verified, active Groq Llama LLM models for the current account.
     """
-    groq_key = os.getenv("GROQ_API_KEY", "")
-    if groq_key:
-        try:
-            import groq
-            client = groq.Groq(api_key=groq_key)
-            all_m = [m.id for m in client.models.list().data if m.id.startswith('llama') and not 'guard' in m.id]
-            if all_m:
-                return {"models": all_m}
-        except Exception:
-            pass
-
-    return {"models": ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "llama3-70b-8192", "llama3-8b-8192"]}
+    return {"models": ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]}
 
 
 @app.post("/api/ingest")

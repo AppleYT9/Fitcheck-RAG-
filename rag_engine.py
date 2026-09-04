@@ -384,14 +384,11 @@ def generate_fit_analysis(
     user_prompt = f"DOCUMENT CONTEXT:\n{formatted_context}\n\nUSER QUERY:\n{query}"
 
     # Verified Groq models in order of priority (llama-3.1-8b-instant gives ~0.3s sub-second responses)
-    base_candidates = [
-        "llama-3.1-8b-instant",
-        "llama-3.3-70b-versatile",
-        "llama3-70b-8192",
-        "llama3-8b-8192"
-    ]
-    candidate_models = [model_name] if model_name and "llama" in model_name.lower() else []
-    for m in base_candidates:
+    ALLOWED_GROQ_MODELS = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
+    candidate_models = []
+    if model_name in ALLOWED_GROQ_MODELS:
+        candidate_models.append(model_name)
+    for m in ALLOWED_GROQ_MODELS:
         if m not in candidate_models:
             candidate_models.append(m)
 
@@ -513,14 +510,11 @@ def generate_recruiter_leaderboard(
         "Provide ranking and <JSON_LEADERBOARD>."
     )
 
-    base_candidates = [
-        "llama-3.1-8b-instant",
-        "llama-3.3-70b-versatile",
-        "llama3-70b-8192",
-        "llama3-8b-8192"
-    ]
-    candidate_models = [model_name] if model_name and "llama" in model_name.lower() else []
-    for m in base_candidates:
+    ALLOWED_GROQ_MODELS = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
+    candidate_models = []
+    if model_name in ALLOWED_GROQ_MODELS:
+        candidate_models.append(model_name)
+    for m in ALLOWED_GROQ_MODELS:
         if m not in candidate_models:
             candidate_models.append(m)
 

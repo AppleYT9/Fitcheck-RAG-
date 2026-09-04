@@ -39,17 +39,15 @@ export default function App() {
   });
   const [selectedModel, setSelectedModel] = useState(() => {
     const saved = localStorage.getItem('jd_fit_selected_model');
-    if (saved && !saved.toLowerCase().includes('llama')) {
-      localStorage.removeItem('jd_fit_selected_model');
-      return 'llama-3.1-8b-instant';
+    if (saved && (saved === 'llama-3.1-8b-instant' || saved === 'llama-3.3-70b-versatile')) {
+      return saved;
     }
-    return saved || 'llama-3.1-8b-instant';
+    localStorage.removeItem('jd_fit_selected_model');
+    return 'llama-3.1-8b-instant';
   });
   const [availableModels, setAvailableModels] = useState([
     { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B', tag: 'Ultra-Fast (~0.3s)' },
-    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', tag: 'Flagship 70B' },
-    { id: 'llama3-70b-8192', label: 'Llama 3 70B', tag: 'High Performance' },
-    { id: 'llama3-8b-8192', label: 'Llama 3 8B', tag: 'Fast' }
+    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', tag: 'Flagship 70B' }
   ]);
   const [groqConnected, setGroqConnected] = useState(true);
   const [newJdName, setNewJdName] = useState('');
@@ -217,30 +215,18 @@ export default function App() {
     try {
       const res = await axios.get(`${API_BASE}/models`);
       if (res.data.models && res.data.models.length > 0) {
+        const allowed = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"];
         const validModels = res.data.models.filter(m => {
           const nameStr = typeof m === 'object' ? m.id : String(m);
-          return nameStr.toLowerCase().includes('llama');
+          return allowed.includes(nameStr);
         });
         if (validModels.length > 0) {
           const mapped = validModels.map(m => {
-            if (typeof m === 'object' && m.id) return m;
-            const nameStr = String(m);
-            let label = nameStr.split('/').pop().replace(/-/g, ' ').toUpperCase();
-            let tag = 'Groq LPUs';
-            if (nameStr.includes('3.3-70b')) {
-              label = 'Llama 3.3 70B';
-              tag = 'Flagship 70B';
-            } else if (nameStr.includes('3.1-8b')) {
-              label = 'Llama 3.1 8B';
-              tag = 'Ultra-Fast (~0.3s)';
-            } else if (nameStr.includes('70b')) {
-              label = 'Llama 3 70B';
-              tag = 'High Performance';
-            } else if (nameStr.includes('8b')) {
-              label = 'Llama 3 8B';
-              tag = 'Fast';
+            const nameStr = typeof m === 'object' ? m.id : String(m);
+            if (nameStr === 'llama-3.1-8b-instant') {
+              return { id: nameStr, label: 'Llama 3.1 8B', tag: 'Ultra-Fast (~0.3s)' };
             }
-            return { id: nameStr, label, tag };
+            return { id: nameStr, label: 'Llama 3.3 70B', tag: 'Flagship 70B' };
           });
           setAvailableModels(mapped);
         }
@@ -1491,7 +1477,7 @@ export default function App() {
               >
                 <span>Fitcheck</span>
                 <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
-                  ({selectedModel === 'llama-3.1-8b-instant' ? 'Llama 8B (~0.3s)' : (selectedModel === 'llama-3.3-70b-versatile' ? 'Llama 70B' : 'Mixtral 8x7B')})
+                  ({selectedModel === 'llama-3.1-8b-instant' ? 'Llama 8B (~0.3s)' : 'Llama 70B'})
                 </span>
                 <ChevronDown size={14} style={{ color: '#6b7280' }} />
               </button>
