@@ -39,7 +39,7 @@ export default function App() {
   });
   const [selectedModel, setSelectedModel] = useState(() => {
     const saved = localStorage.getItem('jd_fit_selected_model');
-    if (saved && (saved.includes('gpt-oss') || saved.includes('qwen') || saved.includes('3.8') || saved.includes('mixtral'))) {
+    if (saved && !saved.toLowerCase().includes('llama')) {
       localStorage.removeItem('jd_fit_selected_model');
       return 'llama-3.1-8b-instant';
     }
@@ -48,7 +48,8 @@ export default function App() {
   const [availableModels, setAvailableModels] = useState([
     { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B', tag: 'Ultra-Fast (~0.3s)' },
     { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', tag: 'Flagship 70B' },
-    { id: 'gemma2-9b-it', label: 'Gemma 2 9B', tag: 'Google Gemma' }
+    { id: 'llama3-70b-8192', label: 'Llama 3 70B', tag: 'High Performance' },
+    { id: 'llama3-8b-8192', label: 'Llama 3 8B', tag: 'Fast' }
   ]);
   const [groqConnected, setGroqConnected] = useState(true);
   const [newJdName, setNewJdName] = useState('');
@@ -218,7 +219,7 @@ export default function App() {
       if (res.data.models && res.data.models.length > 0) {
         const validModels = res.data.models.filter(m => {
           const nameStr = typeof m === 'object' ? m.id : String(m);
-          return !nameStr.includes('gpt-oss') && !nameStr.includes('qwen') && !nameStr.includes('mixtral');
+          return nameStr.toLowerCase().includes('llama');
         });
         if (validModels.length > 0) {
           const mapped = validModels.map(m => {
@@ -226,18 +227,18 @@ export default function App() {
             const nameStr = String(m);
             let label = nameStr.split('/').pop().replace(/-/g, ' ').toUpperCase();
             let tag = 'Groq LPUs';
-            if (nameStr.includes('70b')) {
+            if (nameStr.includes('3.3-70b')) {
               label = 'Llama 3.3 70B';
               tag = 'Flagship 70B';
-            } else if (nameStr.includes('8b')) {
+            } else if (nameStr.includes('3.1-8b')) {
               label = 'Llama 3.1 8B';
               tag = 'Ultra-Fast (~0.3s)';
-            } else if (nameStr.includes('mixtral')) {
-              label = 'Mixtral 8x7B';
-              tag = 'High-Context';
-            } else if (nameStr.includes('gemma')) {
-              label = 'Gemma 2 9B';
-              tag = 'Google Gemma';
+            } else if (nameStr.includes('70b')) {
+              label = 'Llama 3 70B';
+              tag = 'High Performance';
+            } else if (nameStr.includes('8b')) {
+              label = 'Llama 3 8B';
+              tag = 'Fast';
             }
             return { id: nameStr, label, tag };
           });

@@ -387,9 +387,10 @@ def generate_fit_analysis(
     base_candidates = [
         "llama-3.1-8b-instant",
         "llama-3.3-70b-versatile",
-        "gemma2-9b-it"
+        "llama3-70b-8192",
+        "llama3-8b-8192"
     ]
-    candidate_models = [model_name] if model_name and not any(bad in model_name for bad in ["qwen", "gpt-oss", "mixtral"]) else []
+    candidate_models = [model_name] if model_name and "llama" in model_name.lower() else []
     for m in base_candidates:
         if m not in candidate_models:
             candidate_models.append(m)
@@ -515,9 +516,10 @@ def generate_recruiter_leaderboard(
     base_candidates = [
         "llama-3.1-8b-instant",
         "llama-3.3-70b-versatile",
-        "gemma2-9b-it"
+        "llama3-70b-8192",
+        "llama3-8b-8192"
     ]
-    candidate_models = [model_name] if model_name and not any(bad in model_name for bad in ["qwen", "gpt-oss", "mixtral"]) else []
+    candidate_models = [model_name] if model_name and "llama" in model_name.lower() else []
     for m in base_candidates:
         if m not in candidate_models:
             candidate_models.append(m)
