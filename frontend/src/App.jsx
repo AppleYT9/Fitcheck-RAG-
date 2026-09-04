@@ -41,13 +41,13 @@ export default function App() {
     const saved = localStorage.getItem('jd_fit_selected_model');
     if (saved && (saved.includes('gpt-oss') || saved.includes('qwen') || saved.includes('3.8'))) {
       localStorage.removeItem('jd_fit_selected_model');
-      return 'llama-3.3-70b-versatile';
+      return 'llama-3.1-8b-instant';
     }
-    return saved || 'llama-3.3-70b-versatile';
+    return saved || 'llama-3.1-8b-instant';
   });
   const [availableModels, setAvailableModels] = useState([
-    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', tag: 'Flagship 70B' },
     { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B', tag: 'Ultra-Fast (~0.3s)' },
+    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', tag: 'Flagship 70B' },
     { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B', tag: 'High-Context' },
     { id: 'gemma2-9b-it', label: 'Gemma 2 9B', tag: 'Google Gemma' }
   ]);
@@ -848,11 +848,11 @@ export default function App() {
     setIsAnalyzing(true);
 
     try {
-      const res = await axios.post(`${API_BASE}/analyze`, {
+      const res = await apiCallWithRetry(() => axios.post(`${API_BASE}/analyze`, {
         session_id: currentSessionId,
         query: q,
         model_name: selectedModel
-      });
+      }, { timeout: 30000 }), 3, 2000);
 
       const aiMsg = {
         role: 'assistant',
@@ -1491,7 +1491,7 @@ export default function App() {
               >
                 <span>Fitcheck</span>
                 <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>
-                  ({selectedModel === 'llama-3.3-70b-versatile' ? 'Llama 70B' : (selectedModel === 'llama-3.1-8b-instant' ? 'Llama 8B' : 'Mixtral 8x7B')})
+                  ({selectedModel === 'llama-3.1-8b-instant' ? 'Llama 8B (~0.3s)' : (selectedModel === 'llama-3.3-70b-versatile' ? 'Llama 70B' : 'Mixtral 8x7B')})
                 </span>
                 <ChevronDown size={14} style={{ color: '#6b7280' }} />
               </button>

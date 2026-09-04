@@ -383,12 +383,12 @@ def generate_fit_analysis(
 
     user_prompt = f"DOCUMENT CONTEXT:\n{formatted_context}\n\nUSER QUERY:\n{query}"
 
-    # Verified Groq models in order of priority (active on Groq API)
+    # Verified Groq models in order of priority (llama-3.1-8b-instant gives ~0.3s sub-second responses)
     base_candidates = [
-        "llama-3.3-70b-versatile",
         "llama-3.1-8b-instant",
-        "mixtral-8x7b-32768",
-        "gemma2-9b-it"
+        "llama-3.3-70b-versatile",
+        "gemma2-9b-it",
+        "mixtral-8x7b-32768"
     ]
     candidate_models = [model_name] if model_name and not ("qwen" in model_name or "gpt-oss" in model_name) else []
     for m in base_candidates:
@@ -514,10 +514,10 @@ def generate_recruiter_leaderboard(
     )
 
     base_candidates = [
-        "llama-3.3-70b-versatile",
         "llama-3.1-8b-instant",
-        "mixtral-8x7b-32768",
-        "gemma2-9b-it"
+        "llama-3.3-70b-versatile",
+        "gemma2-9b-it",
+        "mixtral-8x7b-32768"
     ]
     candidate_models = [model_name] if model_name and not ("qwen" in model_name or "gpt-oss" in model_name) else []
     for m in base_candidates:

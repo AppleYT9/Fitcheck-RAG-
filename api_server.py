@@ -70,7 +70,7 @@ SESSION_STORE = {}
 class AnalyzeRequest(BaseModel):
     session_id: str
     query: str
-    model_name: Optional[str] = "llama-3.3-70b-versatile"
+    model_name: Optional[str] = "llama-3.1-8b-instant"
 
 
 class ExportReportRequest(BaseModel):
@@ -105,7 +105,7 @@ def get_available_models():
         except Exception:
             pass
 
-    return {"models": ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"]}
+    return {"models": ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "mixtral-8x7b-32768", "gemma2-9b-it"]}
 
 
 @app.post("/api/ingest")
