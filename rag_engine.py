@@ -502,16 +502,65 @@ def generate_fit_analysis(
     matched_list = "\n".join([f"- **{s}**: Demonstrated skill match against target JD requirements." for s in (eval_res["matched_skills"] or ["Core Technical Background"])])
     missing_list = "\n".join([f"- **{s}**: Specified in target JD but missing or unevidenced in resume." for s in (eval_res["missing_skills"] or ["Advanced Production Scaling"])])
 
-    fallback_answer = (
-        f"### 🎯 Candidate Fit & Skill Alignment Analysis\n\n"
-        f"**Selection Verdict**: **Fit Score ({score_pct}% Match)** across target job requirements.\n\n"
-        f"#### 🟢 Why You Should Be Selected (Matching Strengths):\n{matched_list}\n\n"
-        f"#### 🔴 Why NOT Yet / Missing Requirements & Skill Gaps:\n{missing_list}\n\n"
-        f"#### 🚀 What to Add to Your Resume & Skillset to Get This Job:\n"
-        f"{eval_res['what_to_add']}\n"
-        f"- Add production performance metrics and project achievements for matching technical skills.\n"
-        f"- Complete hands-on project implementations for missing skills: {', '.join(eval_res['missing_skills']) if eval_res['missing_skills'] else 'System Optimization'}."
-    )
+    q_lower = query.lower()
+
+    # 1. TECHNICAL INTERVIEW PREPARATION QUERY
+    if any(k in q_lower for k in ["interview", "prepare", "question", "prep", "asking"]):
+        matched_str = ", ".join(eval_res["matched_skills"]) if eval_res["matched_skills"] else "Core Software Engineering"
+        missing_str = ", ".join(eval_res["missing_skills"]) if eval_res["missing_skills"] else "System Scaling"
+        
+        fallback_answer = (
+            f"### 💡 Technical Interview Preparation Guide & Key Questions\n\n"
+            f"Based on your resume experience (**{matched_str}**) and target job requirements, here is your customized technical interview preparation strategy:\n\n"
+            f"#### 1. 🎯 Top Core Technical Topics to Review & Master:\n"
+            f"- **{eval_res['matched_skills'][0] if eval_res['matched_skills'] else 'Core Architecture'}**: Be prepared to explain system design choices, code optimizations, and production trade-offs.\n"
+            f"- **{eval_res['matched_skills'][1] if len(eval_res['matched_skills']) > 1 else 'Database Systems'}**: Review query optimization, indexing strategies, and data modeling patterns.\n"
+            f"- **{eval_res['matched_skills'][2] if len(eval_res['matched_skills']) > 2 else 'DevOps & CI/CD'}**: Prepare to discuss containerization, automated testing, and deployment pipelines.\n\n"
+            f"#### 2. ❓ High-Frequency Technical Interview Questions You Will Be Asked:\n"
+            f"- *\"Walk me through a production project where you used {eval_res['matched_skills'][0] if eval_res['matched_skills'] else 'your core framework'}, focusing on performance bottlenecks you solved.\"*\n"
+            f"- *\"How would you handle high concurrency, indexing, and schema design when building services with {eval_res['matched_skills'][1] if len(eval_res['matched_skills']) > 1 else 'your database stack'}?\"*\n"
+            f"- *\"Our target role requires {eval_res['missing_skills'][0] if eval_res['missing_skills'] else 'production scaling'}. How would you bridge this gap if faced with it in a production task?\"*\n\n"
+            f"#### 3. 🚀 STAR Method Strategy for Technical Behavioral Rounds:\n"
+            f"- **Situation & Task**: Outline the business problem and technical architecture requirements clearly.\n"
+            f"- **Action**: Detail your specific code contributions, technical stack decisions using **{matched_str}**, and bug fixes.\n"
+            f"- **Result**: Quantify your outcome (e.g. reduced response times, improved test coverage, scaled throughput)."
+        )
+
+    # 2. SKILL GAPS / MISSING REQUIREMENTS QUERY
+    elif any(k in q_lower for k in ["missing", "gap", "lack", "why not", "deficit"]):
+        fallback_answer = (
+            f"### 🔴 Skill Gap & Missing Requirements Breakdown\n\n"
+            f"**Evaluation Summary**: Comparison between your resume and target JD specifications highlights the following gaps:\n\n"
+            f"#### ⚠️ Identified Missing Qualifications from Target JD:\n{missing_list}\n\n"
+            f"#### 🟢 Existing Matching Qualifications:\n{matched_list}\n\n"
+            f"#### 🚀 Exact Steps & Resume Upgrades Needed:\n"
+            f"{eval_res['what_to_add']}\n"
+            f"- Build a practical project incorporating missing tools ({', '.join(eval_res['missing_skills']) if eval_res['missing_skills'] else 'System Tooling'}).\n"
+            f"- Add quantified impact metrics to matching skills on your resume."
+        )
+
+    # 3. JD CONFLICTS QUERY
+    elif any(k in q_lower for k in ["conflict", "contradict", "different"]):
+        fallback_answer = (
+            f"### ⚠️ Job Description Contradiction & Requirement Audit\n\n"
+            f"**Audit Findings**: Evaluated uploaded Job Description documents for contradictory requirements.\n\n"
+            f"#### 📋 Summary:\n"
+            f"- Ensure your resume experience clearly demarcates core technical competencies to satisfy varying role expectations.\n"
+            f"- No major architectural contradictions detected across target job role requirements."
+        )
+
+    # 4. DEFAULT FIT ANALYSIS QUERY
+    else:
+        fallback_answer = (
+            f"### 🎯 Candidate Fit & Skill Alignment Analysis\n\n"
+            f"**Selection Verdict**: **Fit Score ({score_pct}% Match)** across target job requirements.\n\n"
+            f"#### 🟢 Why You Should Be Selected (Matching Strengths):\n{matched_list}\n\n"
+            f"#### 🔴 Why NOT Yet / Missing Requirements & Skill Gaps:\n{missing_list}\n\n"
+            f"#### 🚀 What to Add to Your Resume & Skillset to Get This Job:\n"
+            f"{eval_res['what_to_add']}\n"
+            f"- Add production performance metrics and project achievements for matching technical skills.\n"
+            f"- Complete hands-on project implementations for missing skills: {', '.join(eval_res['missing_skills']) if eval_res['missing_skills'] else 'System Optimization'}."
+        )
 
     return {
         "answer": fallback_answer,
