@@ -321,12 +321,68 @@ def parse_conflicts_and_answer(raw_llm_response: str) -> Tuple[str, str]:
 
     return clean_answer, extracted_conflicts
 
+COMMON_TECH_SKILLS = [
+    "Python", "Java", "JavaScript", "TypeScript", "C++", "C#", "Go", "Rust", "PHP", "Ruby",
+    "React", "Angular", "Vue", "Next.js", "Node.js", "Express", "FastAPI", "Django", "Flask", "Spring Boot",
+    "Docker", "Kubernetes", "AWS", "Azure", "GCP", "DevOps", "CI/CD", "Terraform", "Linux",
+    "SQL", "PostgreSQL", "MySQL", "MongoDB", "Redis", "GraphQL", "REST API", "Microservices",
+    "Machine Learning", "PyTorch", "TensorFlow", "Pandas", "Scikit-Learn", "RAG", "LLM", "NLP",
+    "System Design", "Agile", "Scrum", "Git", "Unit Testing", "PyTest"
+]
+
+
+def analyze_candidate_vs_jd(cand_text: str, jd_text: str) -> Dict[str, Any]:
+    cand_lower = cand_text.lower()
+    jd_lower = jd_text.lower()
+    
+    matched_skills = []
+    missing_skills = []
+    
+    jd_skills = [s for s in COMMON_TECH_SKILLS if re.search(r'\b' + re.escape(s.lower()) + r'\b', jd_lower)]
+    
+    for s in jd_skills:
+        if re.search(r'\b' + re.escape(s.lower()) + r'\b', cand_lower):
+            matched_skills.append(s)
+        else:
+            missing_skills.append(s)
+            
+    if not jd_skills:
+        cand_skills = [s for s in COMMON_TECH_SKILLS if re.search(r'\b' + re.escape(s.lower()) + r'\b', cand_lower)]
+        matched_skills = cand_skills[:4] or ["Technical Qualifications", "Relevant Experience"]
+        missing_skills = ["Advanced Production Scaling", "Production Monitoring"]
+
+    if jd_skills:
+        score = max(55, min(96, int((len(matched_skills) / max(1, len(jd_skills))) * 100)))
+    else:
+        score = 82
+
+    why_select = (
+        f"Verified candidate experience in {', '.join(matched_skills[:4])}. Fulfills core technical role criteria."
+    ) if matched_skills else "Solid background in computer science and technical problem solving."
+
+    why_not_select = (
+        f"Missing key JD requirements: {', '.join(missing_skills[:4])}. Needs demonstration of production deployment."
+    ) if missing_skills else "Minor gaps in advanced architecture depth."
+
+    what_to_add = (
+        f"To get this job, candidate should add hands-on projects or certifications demonstrating: {', '.join(missing_skills[:4])}."
+    ) if missing_skills else "Include quantified metrics and production scale numbers on matching resume skills."
+
+    return {
+        "score": score,
+        "matched_skills": matched_skills[:5],
+        "missing_skills": missing_skills[:5],
+        "why_select": why_select,
+        "why_not_select": why_not_select,
+        "what_to_add": what_to_add
+    }
+
 
 def generate_fit_analysis(
     query: str, 
     retrieved_chunks: List[Dict[str, Any]], 
     groq_api_key: str,
-    top_score: float,
+    top_score: float = 0.0,
     model_name: str = "llama-3.3-70b-versatile"
 ) -> Dict[str, str]:
     """
@@ -367,13 +423,13 @@ def generate_fit_analysis(
         "- DO NOT invent, guess, or hallucinate candidate names. If starting with a greeting, simply use 'Hi,' or 'Hello,'.\n"
         "- Speak directly and professionally in natural, conversational, and beautifully formatted markdown.\n"
         "- NEVER echo or output chunk markers or document labels.\n\n"
-        "STRUCTURED RESPONSE FORMAT:\n"
-        "1. 🎯 **Overall Selection Verdict & Fit Score**: Give an honest fit percentage (e.g., 85%) and selection likelihood (Strong Match / Moderate Fit / Stretch Role).\n"
-        "2. ✅ **Key Matching Strengths**: Highlight specific skills, frameworks, internships, projects, and achievements from the resume that fulfill JD requirements.\n"
-        "3. ⚠️ **Skill Gaps & Missing Requirements**: Point out requirements in the JD that are not evident in the resume or need deeper demonstration.\n"
-        "4. 💡 **Actionable Interview & Project Advice**: Clear, practical steps to maximize interview performance and selection odds.\n\n"
+        "STRUCTURED RESPONSE FORMAT (MANDATORY SECTIONS):\n"
+        "1. 🎯 **Overall Selection Verdict & Fit Score**: Fit percentage (e.g., 85%) and selection likelihood (Strong Match / Moderate Fit / Stretch Role).\n"
+        "2. 🟢 **Why You Should Be Selected (Matching Strengths)**: Highlight specific skills, frameworks, internships, projects, and achievements from the resume that fulfill JD requirements.\n"
+        "3. 🔴 **Why NOT Yet / Missing Requirements & Skill Gaps**: Explicitly list all skills, qualifications, or requirements in the JD that are MISSING or weak in the resume.\n"
+        "4. 🚀 **What to Add to Your Resume & Skillset to Get This Job**: Provide a concrete list of tools, projects, certifications, or experience to add to get hired for this role.\n\n"
         "CONFLICT DETECTION (MANDATORY):\n"
-        "- If two or more uploaded Job Descriptions contain contradictory requirements (e.g. JD 1 requires 5+ years while JD 2 requires 0-1 years; or JD 1 requires Java while JD 2 requires Python):\n"
+        "- If two or more uploaded Job Descriptions contain contradictory requirements (e.g. JD 1 requires 5+ years while JD 2 requires 0-1 years):\n"
         "  You MUST include a dedicated block at the very end formatted as:\n"
         "  <CONFLICTS>\n"
         "  Note: [JD_A] requires X while [JD_B] requires Y.\n"
@@ -437,18 +493,24 @@ def generate_fit_analysis(
     resume_chunks = [c for c in retrieved_chunks if c.get("source_type") == "resume"]
     jd_chunks = [c for c in retrieved_chunks if c.get("source_type") == "jd"]
 
-    res_highlights = "\n".join([f"- **Resume Evidence ({c.get('source_name', 'Document')})**: {c.get('source_text', '')[:160]}..." for c in (resume_chunks[:3] or retrieved_chunks[:2])])
-    jd_highlights = "\n".join([f"- **JD Requirement ({c.get('source_name', 'Role')})**: {c.get('source_text', '')[:160]}..." for c in (jd_chunks[:3] or retrieved_chunks[2:5])])
+    resume_text = "\n".join([c.get("source_text", "") for c in (resume_chunks or retrieved_chunks[:2])])
+    jd_text = "\n".join([c.get("source_text", "") for c in (jd_chunks or retrieved_chunks[2:5])])
 
-    score_pct = max(65, min(95, int(top_score * 100))) if top_score > 0 else 82
+    eval_res = analyze_candidate_vs_jd(resume_text, jd_text)
+    score_pct = max(65, min(95, int(top_score * 100))) if top_score > 0 else eval_res["score"]
+
+    matched_list = "\n".join([f"- **{s}**: Demonstrated skill match against target JD requirements." for s in (eval_res["matched_skills"] or ["Core Technical Background"])])
+    missing_list = "\n".join([f"- **{s}**: Specified in target JD but missing or unevidenced in resume." for s in (eval_res["missing_skills"] or ["Advanced Production Scaling"])])
 
     fallback_answer = (
         f"### 🎯 Candidate Fit & Skill Alignment Analysis\n\n"
-        f"**Selection Verdict**: **Moderate-to-Strong Fit ({score_pct}% Match)** across target job requirements.\n\n"
-        f"#### ✅ Key Matching Strengths & Qualifications:\n{res_highlights}\n\n"
-        f"#### ⚠️ Core Job Description Requirements:\n{jd_highlights}\n\n"
-        f"#### 💡 Actionable Interview Strategy:\n"
-        f"- Highlight hands-on experience with core frameworks and system design principles mentioned in the target job descriptions during interviews."
+        f"**Selection Verdict**: **Fit Score ({score_pct}% Match)** across target job requirements.\n\n"
+        f"#### 🟢 Why You Should Be Selected (Matching Strengths):\n{matched_list}\n\n"
+        f"#### 🔴 Why NOT Yet / Missing Requirements & Skill Gaps:\n{missing_list}\n\n"
+        f"#### 🚀 What to Add to Your Resume & Skillset to Get This Job:\n"
+        f"{eval_res['what_to_add']}\n"
+        f"- Add production performance metrics and project achievements for matching technical skills.\n"
+        f"- Complete hands-on project implementations for missing skills: {', '.join(eval_res['missing_skills']) if eval_res['missing_skills'] else 'System Optimization'}."
     )
 
     return {
@@ -611,17 +673,19 @@ def generate_recruiter_leaderboard(
             # Stage 4: Fallback candidate card generator if leaderboard_data is empty
             if not leaderboard_data and candidate_chunks:
                 rank_idx = 1
-                for cand_name in candidate_chunks.keys():
+                for cand_name, cand_chunks_list in candidate_chunks.items():
+                    cand_text = "\n".join([get_chunk_text(c) for c in cand_chunks_list])
+                    eval_res = analyze_candidate_vs_jd(cand_text, jd_text)
                     leaderboard_data.append({
                         "rank": rank_idx,
                         "name": cand_name,
-                        "score": max(50, 92 - (rank_idx - 1) * 8),
+                        "score": eval_res["score"],
                         "verdict": "Top Pick" if rank_idx == 1 else ("Shortlisted" if rank_idx == 2 else "Consider"),
-                        "why_select": f"Evaluated against target JD specifications for {cand_name}.",
-                        "why_not_select": "Refer to hiring manager breakdown for comparative gaps.",
-                        "strengths": ["Technical Qualifications", "Relevant Experience"],
-                        "gaps": [],
-                        "recommendation": f"Schedule screening call with {cand_name}."
+                        "why_select": eval_res["why_select"],
+                        "why_not_select": eval_res["why_not_select"],
+                        "strengths": eval_res["matched_skills"],
+                        "gaps": eval_res["missing_skills"],
+                        "recommendation": eval_res["what_to_add"]
                     })
                     rank_idx += 1
 
@@ -663,27 +727,38 @@ def generate_recruiter_leaderboard(
     # Resilient Fallback: If all LLM calls hit 429/503 overloads, generate candidate cards automatically
     leaderboard_data = []
     rank_idx = 1
-    for cand_name in candidate_chunks.keys():
+    for cand_name, cand_chunks_list in candidate_chunks.items():
+        cand_text = "\n".join([get_chunk_text(c) for c in cand_chunks_list])
+        eval_res = analyze_candidate_vs_jd(cand_text, jd_text)
+        verdict = "Top Pick" if rank_idx == 1 else ("Shortlisted" if rank_idx == 2 else "Consider")
+        
         leaderboard_data.append({
             "rank": rank_idx,
             "name": cand_name,
-            "score": max(55, 92 - (rank_idx - 1) * 8),
-            "verdict": "Top Pick" if rank_idx == 1 else ("Shortlisted" if rank_idx == 2 else "Consider"),
-            "why_select": f"Evaluated against target role specifications for {cand_name}.",
-            "why_not_select": "Refer to candidate profile for comparative skill gaps.",
-            "strengths": ["Technical Qualifications", "Core Competencies"],
-            "gaps": [],
-            "recommendation": f"Proceed to initial technical screening with {cand_name}.",
+            "score": eval_res["score"],
+            "verdict": verdict,
+            "why_select": eval_res["why_select"],
+            "why_not_select": eval_res["why_not_select"],
+            "strengths": eval_res["matched_skills"],
+            "gaps": eval_res["missing_skills"],
+            "recommendation": eval_res["what_to_add"],
             "contains_sensitive_signals": False,
             "flagged_signal_types": []
         })
         rank_idx += 1
 
-    summary_lines = [f"- **Rank {c['rank']} ({c['name']})**: Match Score {c['score']}% — `{c['verdict']}`" for c in leaderboard_data]
+    breakdown_items = []
+    for c in leaderboard_data:
+        breakdown_items.append(
+            f"### 👤 Candidate Evaluation: {c['name']} (Score: {c['score']}% — {c['verdict']})\n\n"
+            f"#### 🟢 Why Select This Candidate (Hiring Strengths):\n{c['why_select']}\n- **Matching Skills**: {', '.join(c['strengths']) if c['strengths'] else 'Technical Qualifications'}\n\n"
+            f"#### 🔴 Why NOT Select / Missing Requirements & Skill Gaps:\n{c['why_not_select']}\n- **Missing Skills**: {', '.join(c['gaps']) if c['gaps'] else 'None'}\n\n"
+            f"#### 🚀 What Candidate Must Add to Get This Job:\n{c['recommendation']}"
+        )
+
     fallback_analysis = (
-        "### 🏆 Recruiter Batch Leaderboard Summary\n\n"
-        "> ⚡ **Fast Match Assessment**: Candidate evaluation completed successfully.\n\n" +
-        "\n".join(summary_lines)
+        "### 🏆 Detailed Hiring Manager Breakdown\n\n" +
+        "\n\n".join(breakdown_items)
     )
 
     return {

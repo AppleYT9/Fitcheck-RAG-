@@ -2118,7 +2118,7 @@ export default function App() {
                           {/* Actionable Interview Tip */}
                           {cand.recommendation && (
                             <div style={{ marginTop: '10px', background: '#f9fafb', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '8px', padding: '8px 12px', fontSize: '12.5px', color: '#4b5563' }}>
-                              <strong style={{ color: '#111827' }}>💡 Actionable Interview Strategy:</strong> {cand.recommendation}
+                              <strong style={{ color: '#111827' }}>🚀 What Candidate Must Add to Get This Job:</strong> {cand.recommendation}
                             </div>
                           )}
                         </div>
